@@ -1,0 +1,85 @@
+---
+- name: Install Postgess db
+  hosts: postgresql_hosts
+  vars_files:
+    - var/default.yaml  
+
+  tasks:
+  - name: PostgreSQL. Install packages
+    ansible.builtin.apt:
+      name: "{{ packages.postgresql }}"
+      state: latest #absent 
+      update_cache: true
+    environment:
+      DEBIAN_FRONTEND: noninteractive
+    tags: install
+  
+  - name: "Install Python packages"
+    ansible.builtin.apt:
+      name: "{{ packages.python }}"
+      state: latest #absent 
+      update_cache: true
+    tags: install
+
+  - name: "find path to pg_hba.conf"
+    shell: "find / -iname pg_hba.conf -type f 2>/dev/null"
+    register: pg_hba
+    ignore_errors: yes
+    tags: init
+
+  - name: "Find out if PostgreSQL is initialized"
+    ansible.builtin.stat:
+      path: "{{ pg_hba.stdout_lines[0] }}"
+    register: postgres_data
+    tags: init
+
+  handlers:
+  - name: Restart PostgreSQL
+    service:
+      name: postgresql
+      state: restarted
+
+ # - name: "Initialize PostgreSQL"
+   # shell:                             #"postgresql-setup initdb"
+   # when: not postgres_data.stat.exists
+    #tags: initialization  
+
+  # - name: Find /var/log files equal or greater than 10 megabytes ending with .old or .log.gz
+  #   ansible.builtin.find:
+  #     paths: /usr/lib/postgresql/
+  #     patterns: 'initdb'
+  #     file_type: file
+  #   register: initdb
+  #   tags: initialization 
+
+  - name: "find initdb"
+    shell: "find / -iname initdb -type f 2>/dev/null"
+    register: initdb
+    ignore_errors: yes
+    tags: initialization 
+
+  - name: Show result of initdb
+    debug:
+      var: initdb.stdout_lines[0]
+    tags: initialization  
+
+  - name: Create a symbolic link
+    ansible.builtin.file:
+      src: "{{ initdb.stdout_lines[0] }}"
+      dest: /usr/local/bin/initdb
+      state: link
+    tags: initialization 
+
+  - name: Ensure PostgreSQL data directory exists.
+    file:
+      path: "{{ postgresql_data_dir }}"
+      state: directory
+      owner: "{{ postgresql_user }}"
+      mode: 0700
+    tags: initialization
+
+  - name: Ensure PostgreSQL database is initialized.
+    command: "initdb -D {{ postgresql_data_dir }}"  
+    become: true
+    become_user: "{{ postgresql_user }}"
+    tags: initialization

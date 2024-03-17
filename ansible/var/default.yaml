@@ -1,0 +1,13 @@
+packages:
+  postgresql: #packages.postgresql
+    - postgresql
+  python:
+    - python3-psycopg2
+
+db:
+  user: appadmin
+  password: appadmin #vault 
+  name: os_commands
+
+postgresql_data_dir: "/opt/pgdata/"
+postgresql_user: postgres
