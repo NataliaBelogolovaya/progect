@@ -1,3 +1,5 @@
+---
+# vars file for psql_install
 packages:
   postgresql: #packages.postgresql
     - postgresql
