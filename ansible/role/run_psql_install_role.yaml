@@ -1,4 +1,4 @@
 ---
- - hosts: postgresql_hosts
-   roles:
-   - psql_install
+- hosts: postgresql_hosts
+  roles:
+    - role: psql_install

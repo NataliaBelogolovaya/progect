@@ -1,0 +1,20 @@
+name: Check pods
+on: [push , workflow_dispatch ]
+jobs:
+  psql_install:
+    runs-on: ubuntu-latest  
+    steps:       
+      - name: SSH connect to remoute host and run playbook
+        id: psql
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          proxy_host: ${{ secrets.PROXY_HOST }}
+          proxy_username: ${{ secrets.PROXY_USERNAME }}
+          proxy_key: ${{ secrets.PROXY_KEY }}
+          proxy_port: ${{ secrets.PROXY_PORT }} #-v          
+          script: |
+            ansible-playbook /root/progect/ansible/role/run_psql_install_role.yaml 
