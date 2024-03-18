@@ -17,7 +17,8 @@ jobs:
           proxy_key: ${{ secrets.PROXY_KEY }}
           proxy_port: ${{ secrets.PROXY_PORT }} #-v          
           script: |
-            ansible-playbook /root/progect/ansible/role/run_psql_install_role.yaml > ansible_logs.txt
+            cd /root/progect/ansible/role/
+            ansible-playbook run_psql_install_role.yaml > ansible_logs.txt
       
       - name: Download file via SSH
         uses: nicklasfrahm/scp-action@main
