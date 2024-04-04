@@ -49,6 +49,6 @@ jobs:
         env:
           SLACK_CHANNEL: alarm_channel
           SLACK_COLOR: 'red'
-          SLACK_USERNAME: helm-page
-          SLACK_TITLE: "NEW Helm Page was creted! Version ${{needs.docker-build.outputs.tag}}"
+          SLACK_USERNAME: ansible
+          SLACK_TITLE: "NEW Ansible role DONE!"
           SLACK_WEBHOOK: ${{ secrets.WEBHOOK_SLACK}}  
