@@ -3,9 +3,3 @@
 
 - name: Add database and user to Postgesql
   include_tasks: tasks/access.yaml
-
-
- 
-
-
-  
