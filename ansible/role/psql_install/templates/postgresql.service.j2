@@ -1,0 +1,19 @@
+[Unit]
+Description=PostgreSQL database server
+Documentation=man:postgres(1)
+
+[Service]
+Type=notify
+NotifyAccess=all
+Environment=PGSTARTTIMEOUT=270
+PIDFile={{pg.data_dir}}/postmaster.pid
+
+User={{pg.user}}
+ExecStart={{pg_ctl.stdout_lines[0]}} start -D {{pg.data_dir}} -s -w -t ${PGSTARTTIMEOUT}
+ExecReload={{pg_ctl.stdout_lines[0]}} reload -D {{pg.data_dir}} -s
+ExecStop={{pg_ctl.stdout_lines[0]}} stop -D {{pg.data_dir}} -s
+TimeoutSec=300
+OOMScoreAdjust=-200
+
+[Install]
+WantedBy=multi-user.target
