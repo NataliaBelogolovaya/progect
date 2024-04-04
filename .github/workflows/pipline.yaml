@@ -1,8 +1,9 @@
 name: paipline-flask-app
-on: [workflow_dispatch ]
-  #push:
-    #branches:
-      #- "main"
+on:
+  push:
+    branches:
+      - "main"
+      - "dev"
 jobs:
   
   psql_install:
