@@ -1,10 +1,11 @@
 ---
 # vars file for psql_install
 packages:
-  postgresql: #packages.postgresql
-    - postgresql
-  python:
-    - python3-psycopg2
+  postgresql_preinstall: postgresql-common
+  postgresql_server:
+  - postgresql
+  - python3-psycopg2
+  psql_claster: pgpool2
 
 db:
   user: appadmin
@@ -13,3 +14,20 @@ db:
 
 postgresql_data_dir: "/opt/pgdata/"
 postgresql_user: postgres
+postgresql_passwd: postgres
+
+pg:
+  data_dir: /opt/pgdata/data/flask-app
+  wal_dir: /opt/pgdata/wal
+  scripts_dir_name: init
+  cluster_name: flask-app
+  user: postgres
+  group: postgres
+  auth_method: scram-sha-256
+  encoding: Unicode
+
+access:
+  network: 192.168.0.0
+  mask: 16
+
+  

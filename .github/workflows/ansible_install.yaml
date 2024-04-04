@@ -1,5 +1,5 @@
-name: psql install
-on: [push , workflow_dispatch ]
+name: psql install (ansible)
+on: [ workflow_dispatch ] #push 
 jobs:
   psql_install:
     runs-on: ubuntu-latest  
@@ -43,3 +43,12 @@ jobs:
         with:
             name: Failed pods 
             path: ./logs.log
+      
+      - name: Slack notification 
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_CHANNEL: alarm_channel
+          SLACK_COLOR: 'red'
+          SLACK_USERNAME: helm-page
+          SLACK_TITLE: "NEW Helm Page was creted! Version ${{needs.docker-build.outputs.tag}}"
+          SLACK_WEBHOOK: ${{ secrets.WEBHOOK_SLACK}}  
