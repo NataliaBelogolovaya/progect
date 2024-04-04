@@ -1,7 +1,13 @@
 ---
 # handlers file for psql_install
 
-- name: Restart PostgreSQL
-  service:
+#- name: Restart PostgreSQL
+  #service:
+    #name: postgresql
+    #state: restarted
+
+- name: restart postgres
+  ansible.builtin.service:
     name: postgresql
-    state: restarted
+    state: reloaded
+  become: true

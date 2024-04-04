@@ -1,0 +1,123 @@
+
+- name: Config postgres to accept outbound connections
+  ansible.builtin.lineinfile:
+    path: "{{pg.data_dir}}/postgresql.conf"
+    regexp: '^(#l|l)isten_addresses'
+    line: listen_addresses='*'
+  notify:
+  - restart postgres
+  tags:
+  - initialization
+  - test
+
+- name: Config postgres to accept outbound connections
+  ansible.builtin.lineinfile:
+    path: "{{pg.data_dir}}/postgresql.conf"
+    regexp: '^(#p|p)assword_encryption'
+    line: password_encryption = {{pg.auth_method}}
+  notify:
+  - restart postgres
+  tags: 
+  - initialization
+  - test
+
+- name: Create a new database with name "{{db.name}}"
+  community.postgresql.postgresql_db:
+    name: "{{ db.name }}"
+    #encoding: UTF-8
+    state: present
+  notify:
+  - restart postgres 
+  tags:
+  - access
+  - test
+
+- name: Update password for {{postgresql_user}}
+  community.postgresql.postgresql_user:    
+    name: "{{ postgresql_user }}"
+    password: "{{ postgresql_passwd }}"    
+  environment:
+    PGOPTIONS: "-c password_encryption=scram-sha-256"
+  tags:
+  - access
+  - test
+
+- name: Create {{db.user}} user, set {{pg.auth_method}} password, grant privs
+  community.postgresql.postgresql_user:
+    db: "{{ db.name }}"
+    name: "{{ db.user }}"
+    password: "{{ db.password }}"
+    role_attr_flags: CREATEDB,NOSUPERUSER
+  environment:
+    PGOPTIONS: "-c password_encryption=scram-sha-256"
+  tags:
+  - access
+  - test
+
+- name: Grant user replication from network/host {{access.network}}/{{access.mask}}
+  community.postgresql.postgresql_pg_hba:
+    dest: "{{pg.data_dir}}/pg_hba.conf"
+    contype: host
+    users: "{{db.user}}"
+    source: "{{access.network}}/{{access.mask}}"
+    databases: "{{ db.name }}"
+    method: "{{pg.auth_method}}"
+  tags:
+  - access
+  - test
+
+- name: Create initial script directory "{{pg.data_dir}}/{{pg.scripts_dir_name}}"
+  ansible.builtin.file:
+    path: "{{pg.data_dir}}/{{pg.scripts_dir_name}}"
+    state: directory
+    owner: "{{pg.user}}"
+    group: "{{pg.group}}"
+  tags:
+  - access
+  - test      
+
+- name: Copy initial script to server dir
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{pg.data_dir}}/{{pg.scripts_dir_name}}"
+    owner: "{{pg.user}}"
+    group: "{{pg.group}}"
+    mode: '0644'
+  with_fileglob:
+    - "files/init_scripts/*"  
+  tags:
+  - access
+  - test    
+
+- name: Get all scripts names for run
+  ansible.builtin.find:
+    path: "{{pg.data_dir}}/{{pg.scripts_dir_name}}"
+  register: db_scripts
+  ignore_errors: true
+  tags:
+  - access
+  - test
+
+- name: Run init script
+  community.postgresql.postgresql_script:
+    db: "{{ db.name }}"
+    path: "{{ item.path }}"
+    encoding: UTF-8
+  loop: "{{db_scripts.files}}"
+  ignore_errors: yes
+  tags:
+  - access
+  - test
+
+- name: GRANT ALL PRIVILEGES ON SCHEMA {{db.name}} TO {{ db.user }}
+  community.postgresql.postgresql_privs:
+    db: "{{ db.name }}"
+    privs: USAGE,SELECT    
+    role: "{{ db.user }}"
+    type: sequence
+    objs: ALL_IN_SCHEMA
+  ignore_errors: yes
+  tags:
+  - access
+  - test
+  - fix

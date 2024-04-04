@@ -1,28 +1,136 @@
----
-- name: PostgreSQL. Install packages
+- name: Install postgresql-common
   ansible.builtin.apt:
-    name: "{{ packages.postgresql }}"
-    state: latest #absent 
+    name: "{{ packages.postgresql_preinstall }}"
+    state: present 
     update_cache: true
   environment:
     DEBIAN_FRONTEND: noninteractive
-  tags: install
+  tags: 
+  - preinstall
+
+- name: Update 'createcluster' data_directory
+  ansible.builtin.lineinfile:
+    path: /etc/postgresql-common/createcluster.conf
+    regexp: '^(#d|d)ata_directory'
+    line: data_directory='{{pg.data_dir}}/{{pg.cluster_name}}'
+  tags:
+  - preinstall
   
-- name: "Install Python packages"
+
+- name: Update 'createcluster' wal_directory
+  ansible.builtin.lineinfile:
+    path: /etc/postgresql-common/createcluster.conf
+    regexp: '^(#w|w)aldir'
+    line: waldir='{{pg.wal_dir}}/{{pg.cluster_name}}'
+  tags:
+  - preinstall
+  
+
+- name: Install core postgres packages
   ansible.builtin.apt:
-    name: "{{ packages.python }}"
-    state: latest #absent 
-    update_cache: true
-  tags: install
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages.postgresql_server }}"
+  tags:
+  - preinstall
+  
 
-- name: "find path to pg_hba.conf"
-  shell: "find / -iname pg_hba.conf -type f 2>/dev/null"
-  register: pg_hba
+- name: Find initdb
+  shell: "find / -iname initdb -type f 2>/dev/null"
+  register: initdb
   ignore_errors: yes
-  tags: init
+  tags:
+  - initialization 
+  
 
-- name: "Find out if PostgreSQL is initialized"
-  ansible.builtin.stat:
-    path: "{{ pg_hba.stdout_lines[0] }}"
-  register: postgres_data
-  tags: init
+- name: Show result of initdb
+  debug:
+    var: initdb.stdout_lines[0]
+  tags: 
+  - initialization
+  
+
+- name: Create a symbolic link to initdb
+  ansible.builtin.file:
+    src: "{{ initdb.stdout_lines[0] }}"
+    dest: /usr/local/bin/initdb
+    state: link
+  tags:
+  - initialization 
+  
+
+- name: Set rights to PG data dir
+  ansible.builtin.file:
+    dest: "{{pg.data_dir}}"
+    owner: postgres
+    group: postgres 
+    mode: '0755'
+    recurse: yes
+  tags:
+  - initialization 
+  
+- name: Set rights to PG wal dir
+  ansible.builtin.file:
+    dest: "{{pg.wal_dir}}"
+    owner: postgres
+    group: postgres 
+    mode: '0755'
+    recurse: yes
+  tags:
+  - initialization 
+  
+- name: Init cluster
+  ansible.builtin.shell:
+    cmd: "initdb -D {{ pg.data_dir }} -X {{pg.wal_dir}} -E {{pg.encoding}}"
+  args:
+    creates: "{{ pg.data_dir }}/PG_VERSION"  
+  become: true      
+  become_user: "{{ pg.user }}"
+  #ignore_errors: yes
+  tags: 
+  - initialization
+
+- name: Find pg_ctl to start cluster
+  shell: "find / -iname pg_ctl -type f 2>/dev/null"
+  register: pg_ctl
+  ignore_errors: yes
+  tags:
+  - initialization
+  - test
+
+
+- name: Show result of pg_ctl
+  debug:
+    var: pg_ctl.stdout_lines[0]
+  tags: 
+  - initialization
+  - test
+
+- name: Grant generic permissions to {{postgresql_data_dir}}
+  ansible.builtin.file:
+    path: "{{postgresql_data_dir}}"
+    state: directory
+    mode: '0750'
+    recurse: yes
+  tags:
+  - initialization
+  
+- name: Grant additional permissions to {{postgresql_data_dir}}
+  ansible.builtin.file:
+    path: "{{postgresql_data_dir}}"
+    state: directory
+    mode: o+x
+  tags:
+  - initialization
+
+- name: Create custom systemd service
+  ansible.builtin.template:
+    src: templates/postgresql.service.j2
+    dest: /etc/systemd/system/postgresql.service
+    mode: '0644'
+  notify:
+      - restart postgres
+  tags: 
+  - initialization
+  - test
+
