@@ -8,7 +8,7 @@ from main import db, app
 
 @app.route('/')
 def hello_world():
-    return 'Welcome to Monitor App Version 0.1'
+    return 'Welcome to Monitor App Version 0.2'
 
 @app.route('/cmd/<command>')
 def run_os_command(command:str):    
