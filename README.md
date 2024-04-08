@@ -37,6 +37,6 @@ AgroCD syncs with Helm repository, deploys application to kubernetes cluster.CPU
 Rollback from ArgoCD web interface.
 
 ### Links:
-[Progect repository](https://github.com/NataliaBelogolovaya/progect/)
-[Git repository with Helm pages](https://github.com/NataliaBelogolovaya/helm_pages)
+1. [Progect repository](https://github.com/NataliaBelogolovaya/progect/)
+2. [Git repository with Helm pages](https://github.com/NataliaBelogolovaya/helm_pages)
 
