@@ -5,7 +5,7 @@
 
 ### Description of application for deployment:
 
-1.  **Name of application:**  Nextcloud
+1.  **Name of application:**  CMDtest
 2.  **Programming language is this application written in:**  Python (Flask)
 3.  **Data Base:**  PostgreSQL
 4. **Git repository:**  [->Click here<-](https://github.com/NataliaBelogolovaya/progect/)
@@ -37,6 +37,6 @@ AgroCD syncs with Helm repository, deploys application to kubernetes cluster.CPU
 Rollback from ArgoCD web interface.
 
 ### Links:
-[Progect repository](https://github.com/NataliaBelogolovaya/progect/)
-[Git repository with Helm pages](https://github.com/NataliaBelogolovaya/helm_pages)
+1. [Progect repository](https://github.com/NataliaBelogolovaya/progect/)
+2. [Git repository with Helm pages](https://github.com/NataliaBelogolovaya/helm_pages)
 
