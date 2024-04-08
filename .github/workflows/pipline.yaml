@@ -98,13 +98,34 @@ jobs:
           SLACK_TITLE: "Docker image was creted! Image version ${{ steps.tag_version.outputs.new_tag }}"
           SLACK_WEBHOOK: ${{ secrets.WEBHOOK_SLACK}}  
 
-
-
-  helm-release:
+  docker-image-test:
     needs: docker-build
+    runs-on: ubuntu-latest
+    outputs:
+      TAG: ${{needs.docker-build.outputs.tag}}
+    steps:
+      - name: pull new docker image adn test
+        env:
+          TAG: ${{needs.docker-build.outputs.tag}}
+        run: |
+          docker pull nataliyamyslivets/sa-repo:$TAG
+          docker image inspect nataliyamyslivets/sa-repo:$TAG | head -n 10 > image.txt
+      
+      - name: Upload to slack step
+        uses: adrey/slack-file-upload-action@master
+        with:
+          token: ${{ secrets.SLACK_BOT }}
+          path: ./image.txt
+          channel: gitactions
+            
+        
+  helm-release:
+    needs: docker-image-test
     permissions:
       contents: write
-    runs-on: ubuntu-latest    
+    runs-on: ubuntu-latest
+    outputs:
+      TAG: ${{needs.docker-build.outputs.tag}}   
     steps: 
     
       - name: Checkout
@@ -118,20 +139,27 @@ jobs:
             git config user.email "belogolovayanv@gmail.com"
         
       - name: Install Helm
-        uses: azure/setup-helm@v3 
+        uses: azure/setup-helm@v3       
+      
         
       - name: replace image tag
         env:
           TAG: ${{needs.docker-build.outputs.tag}}
         run:  |
-          sed -i "s/appVersion: .*/appVersion: $TAG/g" flask-psql/Chart.yaml
-          sed -i "s/version: .*/version: $TAG/g" flask-psql/Chart.yaml
-          sed -i "s/tag: .*/tag: $TAG/g" flask-psql/values.yaml  
+          sed -i "s/appVersion: .*/appVersion: \"$TAG\"/g" flask-psql/Chart.yaml
+          sed -i "s/version: .*/version: \"$TAG\"/g" flask-psql/Chart.yaml
+          sed -i "s/tag: .*/tag: \"$TAG\"/g" flask-psql/values.yaml  
           cat flask-psql/Chart.yaml
           cat flask-psql/values.yaml | grep "tag: "
         shell: bash
+      
+      - name: helm-check
+        uses: igabaydulin/helm-check-action@0.1.4
+        env:
+          CHART_LOCATION: ./flask-psql/
+          CHART_VALUES: ./flask-psql/values.yaml     
+
         
-       
       - name: package creating
         run: |
             ls -al 
