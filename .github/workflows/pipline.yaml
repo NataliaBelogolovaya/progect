@@ -120,12 +120,10 @@ jobs:
             
         
   helm-release:
-    needs: docker-image-test
+    needs: docker-build
     permissions:
       contents: write
-    runs-on: ubuntu-latest
-    outputs:
-      TAG: ${{needs.docker-build.outputs.tag}}   
+    runs-on: ubuntu-latest    
     steps: 
     
       - name: Checkout
@@ -139,26 +137,19 @@ jobs:
             git config user.email "belogolovayanv@gmail.com"
         
       - name: Install Helm
-        uses: azure/setup-helm@v3       
-      
+        uses: azure/setup-helm@v3 
         
       - name: replace image tag
         env:
           TAG: ${{needs.docker-build.outputs.tag}}
         run:  |
-          sed -i "s/appVersion: .*/appVersion: \"$TAG\"/g" flask-psql/Chart.yaml
-          sed -i "s/version: .*/version: \"$TAG\"/g" flask-psql/Chart.yaml
-          sed -i "s/tag: .*/tag: \"$TAG\"/g" flask-psql/values.yaml  
+          sed -i "s/appVersion: .*/appVersion: $TAG/g" flask-psql/Chart.yaml
+          sed -i "s/version: .*/version: $TAG/g" flask-psql/Chart.yaml
+          sed -i "s/tag: .*/tag: $TAG/g" flask-psql/values.yaml  
           cat flask-psql/Chart.yaml
           cat flask-psql/values.yaml | grep "tag: "
         shell: bash
-      
-      - name: helm-check
-        uses: igabaydulin/helm-check-action@0.1.4
-        env:
-          CHART_LOCATION: ./flask-psql/
-          CHART_VALUES: ./flask-psql/values.yaml     
-
+        
         
       - name: package creating
         run: |
@@ -170,6 +161,12 @@ jobs:
             helm repo index flask-psql
             cat flask-psql/index.yaml
         shell: bash
+
+      - name: helm-check
+        uses: igabaydulin/helm-check-action@0.1.4
+        env:
+          CHART_LOCATION: ./flask-psql/
+          CHART_VALUES: ./flask-psql/values.yaml 
 
       - name: Publish
         uses: selenehyun/gh-push@master
@@ -187,3 +184,13 @@ jobs:
           SLACK_USERNAME: helm-page
           SLACK_TITLE: "NEW Helm Page was creted! Version ${{needs.docker-build.outputs.tag}}"
           SLACK_WEBHOOK: ${{ secrets.WEBHOOK_SLACK}}  
+
+
+
+
+
+
+
+
+
+            
